@@ -8,67 +8,22 @@
     tools:context="com.example.myapp.myapplication.MainActivity">
 
 
-    <TextView
-        android:id="@+id/date"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentStart="true"
-        android:layout_alignTop="@+id/pick_date"
-        tools:layout_editor_absoluteX="232dp"
-        tools:layout_editor_absoluteY="174dp" />
-
-
-    <Button
-        android:id="@+id/dlwebpage"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_above="@+id/path"
-        android:layout_alignStart="@+id/getBtn"
-        android:clickable="true"
-        android:focusable="true"
-        android:focusableInTouchMode="true"
-        android:text="dlwebpage"
-        tools:layout_editor_absoluteX="122dp"
-        tools:layout_editor_absoluteY="56dp" />
-
-
-    <Button
-        android:id="@+id/getBtn"
-        android:layout_width="95dp"
-        android:layout_height="wrap_content"
-        android:layout_alignParentEnd="true"
-        android:layout_below="@+id/date"
-        android:layout_marginEnd="29dp"
-        android:maxLines="10000"
-        android:text="show website"
-        tools:layout_editor_absoluteX="273dp"
-        tools:layout_editor_absoluteY="74dp" />
-
-    <TextView
-        android:id="@+id/path"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentStart="true"
-        android:layout_alignParentTop="true"
-        android:ellipsize="none"
-        android:maxLines="60"
-        android:scrollHorizontally="false"
-        android:scrollbars="vertical"
-        tools:layout_editor_absoluteX="232dp"
-        tools:layout_editor_absoluteY="214dp" />
 
     <WebView
         android:id="@+id/result"
         android:layout_width="match_parent"
         android:layout_height="411dp"
-        android:layout_alignParentBottom="true"
         android:layout_alignParentStart="true"
         android:maxLines="10000"
         android:scrollbars="vertical"
         android:text="Result ..."
-        android:textSize="12sp"
+        android:textSize="15sp"
         tools:layout_editor_absoluteX="232dp"
-        tools:layout_editor_absoluteY="233dp" />
+        tools:layout_editor_absoluteY="233dp"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentBottom="true"/>
 
 
 </RelativeLayout>

@@ -1,9 +1,10 @@
 package com.example.myapp.myapplication;
 
 
+import android.app.Activity;
 import android.app.DatePickerDialog;
 import android.app.ProgressDialog;
-import android.content.ClipData;
+
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -11,19 +12,16 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.text.method.ScrollingMovementMethod;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.MotionEvent;
-import android.view.View;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.widget.Button;
 import android.widget.DatePicker;
 import android.widget.TextView;
-import android.support.v7.widget.Toolbar;
-import android.widget.Toast;
+
 
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
@@ -42,44 +40,31 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.URI;
 import java.util.Calendar;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
+
 
 
 import android.net.Uri;
 
-import im.delight.android.webview.AdvancedWebView;
 
-public class MainActivity extends AppCompatActivity implements View.OnClickListener{
+public class MainActivity extends AppCompatActivity{
 
     private WebView result;
-    private Button getBtn;
-    private String outputTest;
-    private TextView path;
     private String webViewOut;
     private String getWebsiteOut = "";
     private String dateUrl;
-    private ClipData.Item download;// = new Button(getApplicationContext());
 
-    private String testDeleteOut;
 
     private int mYear,mMonth,mDay;
     private String globaldate;
-    private ClipData.Item pickDate;
-    private Button dlwebpage;// = new Button(getApplicationContext());
-    private TextView textView;
-    private Toolbar toolbar;
-    private Menu menu;
-    private String inBedMenuTitle = "Set to 'In bed'";
-    private String outOfBedMenuTitle = "Set to 'Out of bed'";
-    private boolean inBed = false;
 
-    private AdvancedWebView mWebView;
+
+    private int screenHeight;
+    private int screenWidth;
 
     String title;
-    ProgressDialog pd;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -87,54 +72,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         setContentView(R.layout.activity_main);
         result =  findViewById(R.id.result);
 
-        path = findViewById(R.id.path);
-
-        getBtn = (Button) findViewById(R.id.getBtn);
-        getBtn.setOnClickListener(this); // calling onClick() method
-
-        //Button download = new Button(getApplicationContext());
-        //download = (Button) findViewById(R.id.download_website);
-        //download.setOnClickListener(this);
-
-        //pickDate =  findViewById(R.id.pick_date);
-        //pickDate.setOnClickListener(this);
-
-        //mWebView.setListener(this, this);
-
-
-        // Attaching the layout to the toolbar object
-        //toolbar = (Toolbar) findViewById(R.id.tool_bar);
-        // Setting toolbar as the ActionBar with setSupportActionBar() call
-        //setSupportActionBar(toolbar);
-
-        //Button dlwebpage = new Button(getApplicationContext());
-        dlwebpage = (Button) findViewById(R.id.dlwebpage);
-        dlwebpage.setOnClickListener(this);
 
 
 
-        textView = (TextView) findViewById(R.id.date);
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+        screenHeight = displayMetrics.heightPixels;
+        screenWidth = displayMetrics.widthPixels;
 
-        dlwebpage.setOnFocusChangeListener(new View.OnFocusChangeListener() {
-            public void onFocusChange(View v, boolean hasFocus) {
-                if (hasFocus) {
-                    v.performClick();
-                }
-            }
-        });
 
-        dlwebpage.setOnTouchListener(new View.OnTouchListener(){
 
-            @Override
-            public boolean onTouch(View view, MotionEvent event) {
-                if (MotionEvent.ACTION_UP == event.getAction())
-                {
-                    view.performClick();
-                    return true;
-                }
-                return false;
-            }
-        });
 
     }
 
@@ -166,81 +113,64 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
 
 
+    public void setupWebView(){
+        result.clearCache(true);
+        result.clearView();
+        result.reload();
+        result.setInitialScale(1);
+        result.getSettings().setUseWideViewPort(true);
+        result.getSettings().setLoadWithOverviewMode(true);
 
-    @Override
-    public void onClick(View v) {
-
-        switch (v.getId()) {
-
-            case R.id.getBtn:
-                path.setMovementMethod(new ScrollingMovementMethod());
-
-                webViewOut = readFromFile(getBaseContext(),globaldate);
-
-                //File file = new File(getFilesDir() + date,"temp.html");
-                path.setText(globaldate);
-
-                result.clearCache(true);
-                result.clearView();
-                result.reload();
-
-                //result.getSettings().setAppCacheMaxSize(5 * 1024 * 1024);
-                //result.getSettings().setAppCachePath( getApplicationContext().getCacheDir().getAbsolutePath() );
-                result.getSettings().setAllowFileAccess( true );
-                //result.getSettings().setAppCacheEnabled(true);
-                result.getSettings().setJavaScriptEnabled(true);
-                result.getSettings().setSaveFormData(true);
-                result.getSettings().setBuiltInZoomControls(true);
-                result.setWebViewClient(new WebViewClient());
-                result.getSettings().setCacheMode( WebSettings.LOAD_DEFAULT );
-
-                //result.loadData(webViewOut,"text/html",null);
-                result.loadDataWithBaseURL("file:///" + getBaseContext().getFilesDir().toString() + "/" + globaldate,webViewOut,"text/html","UTF-8",null);
-
-                //result.reload();
-
-                if ( !isNetworkAvailable() ) { // loading offline
-                    result.getSettings().setCacheMode( WebSettings.LOAD_CACHE_ELSE_NETWORK );
-                }
-
-                //result.loadUrl( dateUrl);
-
-
-                //esult.setWebViewClient(new WebViewClient());
-
-                break;
-
-            case R.id.dlwebpage:
-
-                //getWebsiteFromUrl(dateUrl);
-                //TheTask task = new TheTask(false,dateUrl);
-                //task.execute();
-                writeToFile(getWebsiteOut, getApplicationContext(), globaldate);
-
-                break;
-            default:
-                break;
-        }
+        //result.getSettings().setAppCacheMaxSize(5 * 1024 * 1024);
+        //result.getSettings().setAppCachePath( getApplicationContext().getCacheDir().getAbsolutePath() );
+        result.getSettings().setAllowFileAccess( true );
+        //result.getSettings().setAppCacheEnabled(true);
+        result.getSettings().setJavaScriptEnabled(true);
+        result.getSettings().setSaveFormData(true);
+        result.getSettings().setBuiltInZoomControls(true);
+        result.setWebViewClient(new WebViewClient());
+        result.getSettings().setCacheMode( WebSettings.LOAD_DEFAULT );
+        result.getSettings().setLayoutAlgorithm(WebSettings.LayoutAlgorithm.NARROW_COLUMNS);
+        result.getSettings().setDefaultFontSize(40);
 
     }
 
     public void doThat(MenuItem item){
-        //path.setText("DOWNLOAD IN PROGRESS");
-        //getWebsiteFromUrl(dateUrl, globaldate,getBaseContext());
 
-        AsyncTaskRunner runner = new AsyncTaskRunner();
-        runner.execute(dateUrl,globaldate);
+        File temp = new File(getBaseContext().getFilesDir().toString() + "/" + globaldate);
 
-        try
-        {
-            Thread.sleep(2000);
-        }
-        catch(InterruptedException ex)
-        {
-            Thread.currentThread().interrupt();
-        }
-        writeToFile(getWebsiteOut,getBaseContext(),globaldate);
-        path.setText("DOWNLOAD COMPLETE");
+        //if(!temp.exists()) {
+
+
+            AsyncTaskRunner runner = new AsyncTaskRunner();
+            runner.execute(dateUrl, globaldate);
+
+            try
+            {
+                Thread.sleep(3000);
+            }
+            catch(InterruptedException ex)
+            {
+               Thread.currentThread().interrupt();
+            }
+
+            //writeToFile(getWebsiteOut,getBaseContext(),globaldate);
+
+        //}
+
+
+
+
+        webViewOut = readFromFile(getBaseContext(),globaldate);
+
+        //File file = new File(getFilesDir() + date,"temp.html");
+
+        setupWebView();
+
+        //result.loadData(webViewOut,"text/html",null);
+        result.loadDataWithBaseURL("file:///" + getBaseContext().getFilesDir().toString() + "/" + globaldate,webViewOut,"text/html","UTF-8",null);
+        //result.loadDataWithBaseURL(null,webViewOut,"text/html","UTF-8",null);
+        //result.loadData(webViewOut,"text/html","UTF-8");
     }
 
 
@@ -271,24 +201,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         if (dayOfMonth < mDay && year == mYear && monthOfYear == mMonth)
                             view.updateDate(mYear,mMonth,mDay);
 
-                        //pickDate.setText( (monthOfYear + 1) + "-"+dayOfMonth  + "-" + year);
-                        //menu.getItem(R.id.pick_date).setTitle("test");
-                        //pickDate.getText();
                         globaldate = Integer.toString(dayOfMonth) + Integer.toString(monthOfYear+1) + Integer.toString(year);
                         dateUrl = "";
                         dateUrl = createUrlFromDate(year,monthOfYear,dayOfMonth);
-                        //getWebsiteFromUrl(dateUrl);
-                        /*try
-                        {
-                            Thread.sleep(5000);
-                        }
-                        catch(InterruptedException ex)
-                        {
-                            Thread.currentThread().interrupt();
-                        }*/
-                        //writeToFile(getWebsiteOut, getBaseContext(), globaldate);
-
-                        //path.setText(dateUrl);
 
                     }
                 }, mYear, mMonth, mDay);
@@ -299,123 +214,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
 
 
-    private void getWebsiteFromUrl(final String url,final String date,final Context context) {
-        final String ret = "";
-        Thread task = new Thread(new Runnable() {
-            @Override
-            public void run() {
-
-                try {
-                    //final Document doc = Jsoup.connect(url).userAgent("Mozilla").get();
-                    Document doc = Jsoup.connect(url).get();
-                    getWebsiteOut = doc.toString();
-
-                    Elements images = doc.select("img[src]");
-                    //getImages(images,date,context);
-
-                    String _path = context.getFilesDir().toString() + "/" + date;
-
-                    File tempFile = new File(_path);
-
-                    if(!tempFile.exists()) {
-                        tempFile.mkdir();
-                    }
-
-
-                    for(Element link : images){
-                        //get image url and data
-                        String temp = link.attr("src");
-                        Connection.Response resultImageResponse = Jsoup.connect(temp).ignoreContentType(true).execute();
-
-                        //parse for file name and replace in html
-                        Uri uri = Uri.parse(temp);
-                        String imageName = uri.getLastPathSegment();
-                        link.attr("src", imageName);
-
-                        List<TextNode> tnList = link.textNodes();
-
-                        try {
-                            FileOutputStream out = new FileOutputStream(new File(_path + "/" + imageName));
-                            out.write(resultImageResponse.bodyAsBytes());
-                            out.close();
-                            getWebsiteOut = getWebsiteOut.replace(temp,"file:///" + _path + "/" + imageName);
-
-                        } catch (IOException e) {
-                            Log.e("Exception", "File write failed: " + e.toString());
-                        }
-
-                    }
-
-                    Elements scripts = doc.getElementsByTag("script");
-                    Elements css     = doc.getElementsByTag("link");
-
-                    for(Element c : scripts) {
-                        String url = c.absUrl("href");
-                        String rel = c.attr("type") == null ? "" : c.attr("type");
-                        if(!url.isEmpty() && rel.equals("text/javascript")){
-                            System.out.println(url);
-                            Uri uri = Uri.parse(url);
-                            Document docScript = Jsoup
-                                    .connect(url)
-                                    .userAgent("Mozilla")
-                                    .ignoreContentType(true)
-                                    .get();
-
-                            String filename = uri.getLastPathSegment();
-                            try {
-                                BufferedWriter out = new BufferedWriter(new FileWriter(_path + "/" + filename));
-                                out.write(docScript.toString());
-                                out.close();
-                                getWebsiteOut = getWebsiteOut.replace(url, "file:///" + _path + "/" + filename);
-                            }catch (IOException e) {
-                                Log.e("Exception", "File write failed: " + e.toString());
-                            }
-                            System.out.println(docScript);
-                            System.out.println("--------------------------------------------");
-                        }
-                    }
-
-
-                    for(Element c : css) {
-                        String url = c.absUrl("href");
-                        String rel = c.attr("rel") == null ? "" : c.attr("rel");
-                        if(!url.isEmpty() && rel.equals("stylesheet")) {
-                            System.out.println(url);
-                            Uri uri = Uri.parse(url);
-                            Document docScript = Jsoup
-                                    .connect(url)
-                                    .userAgent("Mozilla")
-                                    .ignoreContentType(true)
-                                    .get();
-
-                            String filename = uri.getLastPathSegment();
-                            try {
-                                BufferedWriter out = new BufferedWriter(new FileWriter(_path + "/" + filename));
-                                out.write(docScript.toString());
-                                out.close();
-                                getWebsiteOut = getWebsiteOut.replace(url, "file:///" + _path + "/" + filename);
-                            }catch (IOException e) {
-                                Log.e("Exception", "File write failed: " + e.toString());
-                            }
-                            System.out.println(docScript);
-                            System.out.println("--------------------------------------------");
-                        }
-                    }
-
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
-
-            }
-        });
-
-        task.start();
-    }
-
-
-
-
+    //update this function for 21st 22nd 23rd and so on...
     private String createUrlFromDate(int year,int month, int day){
         String url = "https://dailyshotbrief.com/the-daily-shot-brief-";
 
@@ -459,12 +258,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
 
         url += Integer.toString(day);
-
-        if(day == 1){
+        int temp = day % 10;
+        if(temp == 1){
             url += "st-";
-        }else if(day == 2){
+        }else if(temp == 2){
             url += "nd-";
-        }else if(day == 3){
+        }else if(temp == 3){
             url += "rd-";
         }else{
             url += "th-";
@@ -565,28 +364,26 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         protected String doInBackground(String... params) {
             publishProgress("Sleeping..."); // Calls onProgressUpdate()
 
-            /*try {
-                int time = Integer.parseInt(params[0])*1000;
-
-                Thread.sleep(time);
-                resp = "Slept for " + params[0] + " seconds";
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-                resp = e.getMessage();
-            } catch (Exception e) {
-                e.printStackTrace();
-                resp = e.getMessage();
-            } */
 
             try {
                 //final Document doc = Jsoup.connect(url).userAgent("Mozilla").get();
                 Document doc = Jsoup.connect(params[0]).get();
-                getWebsiteOut = doc.toString();
+                //getWebsiteOut = doc.toString();
 
                 Elements images = doc.select("img[src]");
                 //getImages(images,date,context);
 
                 String _path = getApplication().getFilesDir().toString() + "/" + params[1];
+
+                Elements article = doc.getElementsByTag("article");
+
+                getWebsiteOut = getWebsiteOut + "<!DOCTYPE HTML> " +
+                        "<html>" +
+                        "<meta name=\"viewport\" content='width=device-width, initial-scale=1.0,text/html,charset=utf-8' >";
+
+                getWebsiteOut = article.html();
+
+                getWebsiteOut = getWebsiteOut + "</html>";
 
                 File tempFile = new File(_path);
 
@@ -598,7 +395,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 for(Element link : images){
                     //get image url and data
                     String temp = link.attr("src");
-                    Connection.Response resultImageResponse = Jsoup.connect(temp).ignoreContentType(true).execute();
+                    Connection.Response resultImageResponse = Jsoup.connect(temp).timeout(60000).ignoreContentType(true).execute();
 
                     //parse for file name and replace in html
                     Uri uri = Uri.parse(temp);
@@ -607,89 +404,34 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                     List<TextNode> tnList = link.textNodes();
 
-                    try {
-                        FileOutputStream out = new FileOutputStream(new File(_path + "/" + imageName));
-                        out.write(resultImageResponse.bodyAsBytes());
-                        out.close();
-                        getWebsiteOut = getWebsiteOut.replace(temp,imageName);
+                    int w = (int) Math.round(screenWidth * 0.2);
+                    String width = "width=" +  Integer.toString(screenWidth);//Integer.toString(300);
+                    int h = (int) Math.round(screenHeight * 0.2);
+                    String height = "height=" + Integer.toString(200);
 
-                    } catch (IOException e) {
-                        Log.e("Exception", "File write failed: " + e.toString());
-                    }
+                    File file = new File(_path + "/" + imageName);
 
-                }
+                    //if(!file.exists()) {
 
-                Elements scripts = doc.getElementsByTag("script");
-                Elements css     = doc.getElementsByTag("link");
-
-                for(Element c : scripts){
-
-
-                    String url = c.absUrl("src");
-                    String rel = c.attr("type") == null ? "" : c.attr("type");
-                    if(!url.isEmpty() && rel.equals("text/javascript")) {
-                        System.out.println(url);
-                        Uri uri = Uri.parse(url);
-                        Connection.Response docScript = Jsoup
-                                .connect(url)
-                                .userAgent("Mozilla")
-                                .ignoreContentType(true)
-                                .execute();
-
-                        String filename = uri.getLastPathSegment();
                         try {
-                                /*
-                                BufferedWriter out = new BufferedWriter(new FileWriter(_path + "/" + filename));
-                                out.write(docScript.toString());
-                                out.close();
-                                */
+                            FileOutputStream out = new FileOutputStream(new File(_path + "/" + imageName));
+                            out.write(resultImageResponse.bodyAsBytes());
+                            out.close();
+                            getWebsiteOut = getWebsiteOut.replace(temp, "file:///" + _path + "/" + imageName);
+                            //getWebsiteOut = getWebsiteOut.replace(temp, imageName);
+                            //getWebsiteOut = getWebsiteOut.replaceAll("width=\".*?\"", "style=\"display: inline; \"");
+                            //getWebsiteOut = getWebsiteOut.replaceAll("width=\".*?\"", width);
+                            //getWebsiteOut = getWebsiteOut.replaceAll("height=\".*?\"", "");
+                            //link.attr("src",imageName);
+                            //link.attr("style","max-width: 100%; height: auto;");
 
-                            FileOutputStream out2 = new FileOutputStream(new File(_path + "/" + filename));
-                            out2.write(docScript.bodyAsBytes());
-                            out2.close();
-                            getWebsiteOut = getWebsiteOut.replace(url, "file:///" + _path + "/" + filename);
-                            //getWebsiteOut = getWebsiteOut.replace(url,  filename);
-                        }catch (IOException e) {
+                        } catch (IOException e) {
                             Log.e("Exception", "File write failed: " + e.toString());
                         }
-                        System.out.println(docScript);
-                        System.out.println("--------------------------------------------");
-                    }
+
+                        writeToFile(getWebsiteOut,getBaseContext(),globaldate);
+                    //}
                 }
-
-
-                    for(Element c : css) {
-                        String url = c.absUrl("href");
-                        String rel = c.attr("rel") == null ? "" : c.attr("rel");
-                        if(!url.isEmpty() && rel.equals("stylesheet")) {
-                            System.out.println(url);
-                            Uri uri = Uri.parse(url);
-                            Connection.Response docScript = Jsoup
-                                    .connect(url)
-                                    .userAgent("Mozilla")
-                                    .ignoreContentType(true)
-                                    .execute();
-
-                            String filename = uri.getLastPathSegment();
-                            try {
-                                /*
-                                BufferedWriter out = new BufferedWriter(new FileWriter(_path + "/" + filename));
-                                out.write(docScript.toString());
-                                out.close();
-                                */
-
-                                FileOutputStream out2 = new FileOutputStream(new File(_path + "/" + filename));
-                                out2.write(docScript.bodyAsBytes());
-                                out2.close();
-                                //getWebsiteOut = getWebsiteOut.replace(url, "file:///" + _path + "/" + filename);
-                                getWebsiteOut = getWebsiteOut.replace(url, filename);
-                            }catch (IOException e) {
-                                Log.e("Exception", "File write failed: " + e.toString());
-                            }
-                            System.out.println(docScript);
-                            System.out.println("--------------------------------------------");
-                        }
-                    }
 
             } catch (IOException e) {
                 e.printStackTrace();
@@ -702,7 +444,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         protected void onPostExecute(String result) {
             // execution of result of Long time consuming operation
             progressDialog.dismiss();
-            path.setText(result);
         }
 
 
@@ -716,7 +457,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         @Override
         protected void onProgressUpdate(String... text) {
-            path.setText(text[0]);
 
         }
     }
