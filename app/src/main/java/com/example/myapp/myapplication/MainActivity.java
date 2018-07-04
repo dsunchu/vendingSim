@@ -11,7 +11,7 @@ import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
-import android.text.method.ScrollingMovementMethod;
+
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Menu;
@@ -20,14 +20,13 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.DatePicker;
-import android.widget.TextView;
+
 
 
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
-import org.jsoup.nodes.TextNode;
 import org.jsoup.select.Elements;
 
 import java.io.BufferedReader;
@@ -41,8 +40,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Calendar;
-import java.util.List;
-
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 import android.net.Uri;
@@ -52,18 +51,17 @@ public class MainActivity extends AppCompatActivity{
 
     private WebView result;
     private String webViewOut;
-    private String getWebsiteOut = "";
+
     private String dateUrl;
 
 
     private int mYear,mMonth,mDay;
-    private String globaldate;
+    private String globalDate;
 
-
-    private int screenHeight;
-    private int screenWidth;
 
     String title;
+
+    final Calendar c = Calendar.getInstance();
 
 
     @Override
@@ -72,15 +70,26 @@ public class MainActivity extends AppCompatActivity{
         setContentView(R.layout.activity_main);
         result =  findViewById(R.id.result);
 
+        getCurrentNewsLetterDate();
+        initialDownload();
 
+        File temp = new File(getBaseContext().getFilesDir().toString() + "/" +globalDate);
 
+       if(isNetworkAvailable() && !temp.exists()) {
+            AsyncTaskRunner runner = new AsyncTaskRunner();
+            runner.execute(dateUrl,globalDate);
 
-        DisplayMetrics displayMetrics = new DisplayMetrics();
-        getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
-        screenHeight = displayMetrics.heightPixels;
-        screenWidth = displayMetrics.widthPixels;
+        }else{
+           webViewOut = readFromFile(getBaseContext(),globalDate);
 
+           //File file = new File(getFilesDir() + date,"temp.html");
 
+           setupWebView();
+
+           //result.loadData(webViewOut,"text/html",null);
+           result.loadDataWithBaseURL("file:///" + getBaseContext().getFilesDir().toString() + "/" +globalDate, webViewOut, "text/html", "UTF-8", null);
+           System.out.println("ONCREATE:" +globalDate);
+       }
 
 
     }
@@ -96,6 +105,7 @@ public class MainActivity extends AppCompatActivity{
         return true;
     }
 
+/*
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         // Handle action bar item clicks here. The action bar will
@@ -110,7 +120,7 @@ public class MainActivity extends AppCompatActivity{
 
         return super.onOptionsItemSelected(item);
     }
-
+*/
 
 
     public void setupWebView(){
@@ -130,53 +140,139 @@ public class MainActivity extends AppCompatActivity{
         result.getSettings().setBuiltInZoomControls(true);
         result.setWebViewClient(new WebViewClient());
         result.getSettings().setCacheMode( WebSettings.LOAD_DEFAULT );
-        result.getSettings().setLayoutAlgorithm(WebSettings.LayoutAlgorithm.NARROW_COLUMNS);
-        result.getSettings().setDefaultFontSize(40);
+        result.getSettings().setDefaultFontSize(30);
+        //result.getSettings().setLayoutAlgorithm(WebSettings.LayoutAlgorithm.SINGLE_COLUMN);
 
     }
 
-    public void doThat(MenuItem item){
+    public void doThat(MenuItem menu){
 
-        File temp = new File(getBaseContext().getFilesDir().toString() + "/" + globaldate);
+        File temp = new File(getBaseContext().getFilesDir().toString() + "/" +globalDate);
 
         //if(!temp.exists()) {
 
-
+        if(isNetworkAvailable() && !temp.exists()) {
+            System.out.println("RUNNING ASYNC ");
             AsyncTaskRunner runner = new AsyncTaskRunner();
-            runner.execute(dateUrl, globaldate);
+            runner.execute(dateUrl,globalDate);
 
-            try
-            {
-                Thread.sleep(3000);
-            }
-            catch(InterruptedException ex)
-            {
-               Thread.currentThread().interrupt();
-            }
+        }else{
+            webViewOut = readFromFile(getBaseContext(),globalDate);
+            setupWebView();
 
-            //writeToFile(getWebsiteOut,getBaseContext(),globaldate);
+            System.out.println("DO THAT:" +globalDate);
 
+            result.loadDataWithBaseURL("file:///" + getBaseContext().getFilesDir().toString() + "/" +globalDate, webViewOut, "text/html", "UTF-8", null);
+        }
         //}
 
 
 
+        //CLEAN DIRECTORIES TO RETEST DOWNLOAD
+        //temp.delete();
+        /*if (temp.isDirectory())
+        {
+            String[] children = temp.list();
+            for (int i = 0; i < children.length; i++)
+            {
+                new File(temp, children[i]).delete();
+            }
+        }
+        */
+    }
 
-        webViewOut = readFromFile(getBaseContext(),globaldate);
 
-        //File file = new File(getFilesDir() + date,"temp.html");
+    public void initialDownload(){
 
-        setupWebView();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Document doc = null;
+                    doc = Jsoup.connect("http://dailyshotbrief.com/feed/").timeout(50000).get();
+                    Elements links = doc.getElementsByTag("link");
 
-        //result.loadData(webViewOut,"text/html",null);
-        result.loadDataWithBaseURL("file:///" + getBaseContext().getFilesDir().toString() + "/" + globaldate,webViewOut,"text/html","UTF-8",null);
-        //result.loadDataWithBaseURL(null,webViewOut,"text/html","UTF-8",null);
-        //result.loadData(webViewOut,"text/html","UTF-8");
+                    String pattern = ".*https://dailyshotbrief.com/the-daily-shot-brief-.*";
+
+                    Pattern r = Pattern.compile(pattern);
+
+                    for(Element link : links){
+                        String url = "";
+                        Matcher m = r.matcher(link.toString());
+
+                        if(m.find()){
+                            System.out.println("=============FOUND A DATE==================");
+                            url = link.toString().replaceAll("<.*link>","");
+                            url = url.replaceAll("\\n","");
+                            //TODO: create a getDateFromUrl function so we store with the same date as selected
+
+                            globalDate= getDateFromUrl(url);
+
+                            dateUrl = url;
+                            break;
+                        }
+
+                    }
+
+                } catch (IOException e) {
+                    System.out.println();
+                }
+
+            }
+        }).start();
+        try
+        {
+            Thread.sleep(3000);
+        }
+        catch(InterruptedException ex)
+        {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+
+    public String getDateFromUrl(String url){
+        String ret;
+        //TODO: find a better way to do this
+        ret = url.replaceAll("https://dailyshotbrief.com/the-daily-shot-brief-","");
+        ret = ret.replaceAll("-2-2-2/","");
+        ret = ret.replaceAll("-2-2","");
+        ret = ret.replaceAll("-|th|st|nd|rd","");
+        //add in 0 after month so we dont overlap dates
+        ret = ret.replaceAll("jan","10");
+        ret = ret.replaceAll("feb","20");
+        ret = ret.replaceAll("mar","30");
+        ret = ret.replaceAll("apr","40"); //TODO: apr or april?
+        ret = ret.replaceAll("may","50");
+        ret = ret.replaceAll("june","60");
+        ret = ret.replaceAll("july","70");
+        ret = ret.replaceAll("aug","80");
+        ret = ret.replaceAll("sept","90"); //TODO: sept or sep?
+        ret = ret.replaceAll("oct","100");
+        ret = ret.replaceAll("nov","110");
+        ret = ret.replaceAll("dec","120");
+        ret = ret.replaceAll("/","");
+        ret = ret.replaceAll(" ","");
+
+
+        return ret;
     }
 
 
 
+    public String getCurrentNewsLetterDate(){
+        String ret;
+            int year = c.get(Calendar.YEAR);
+            int month = c.get(Calendar.MONTH);
+            int day = c.get(Calendar.DAY_OF_MONTH);
+
+            ret = Integer.toString(month+1) + "0" + Integer.toString(day) + Integer.toString(year);
+            globalDate= ret.toString();
+        return ret;
+    }
+
     public void doThis(MenuItem item){
-        final Calendar c = Calendar.getInstance();
+        //final Calendar c = Calendar.getInstance();
         mYear = c.get(Calendar.YEAR);
         mMonth = c.get(Calendar.MONTH);
         mDay = c.get(Calendar.DAY_OF_MONTH);
@@ -201,7 +297,7 @@ public class MainActivity extends AppCompatActivity{
                         if (dayOfMonth < mDay && year == mYear && monthOfYear == mMonth)
                             view.updateDate(mYear,mMonth,mDay);
 
-                        globaldate = Integer.toString(dayOfMonth) + Integer.toString(monthOfYear+1) + Integer.toString(year);
+                        globalDate= Integer.toString(monthOfYear+1) + "0" + Integer.toString(dayOfMonth) + Integer.toString(year);
                         dateUrl = "";
                         dateUrl = createUrlFromDate(year,monthOfYear,dayOfMonth);
 
@@ -258,12 +354,12 @@ public class MainActivity extends AppCompatActivity{
         }
 
         url += Integer.toString(day);
-        int temp = day % 10;
-        if(temp == 1){
+        //int temp = day % 10;
+        if(day == 1){
             url += "st-";
-        }else if(temp == 2){
+        }else if(day == 2){
             url += "nd-";
-        }else if(temp == 3){
+        }else if(day == 3){
             url += "rd-";
         }else{
             url += "th-";
@@ -283,20 +379,13 @@ public class MainActivity extends AppCompatActivity{
 
         if(!temp.exists()) {
             temp.mkdir();
-        }
-                /*
+            File html = new File(_path + "/temp.html");
             try {
-                OutputStream outStream = new FileOutputStream( _path + "/temp.html");
-                outStream = new BufferedOutputStream(outStream, 1024 * 1024);
-                //OutputStreamWriter outputStreamWriter = new OutputStreamWriter(context.openFileOutput(  date + "/temp.html", Context.MODE_PRIVATE));
-                OutputStreamWriter outputStreamWriter = new OutputStreamWriter(outStream, "UTF-8");
-                outputStreamWriter.write(data);
-                outputStreamWriter.close();
-                outStream.close();
-
-            } catch (IOException e) {
-                Log.e("Exception", "File write failed: " + e.toString());
-            } */
+                html.createNewFile();
+            }catch(IOException e){
+                Log.e("Exception", "File creation failed: " + e.toString());
+            }
+        }
 
         try {
             BufferedWriter out = new BufferedWriter(new FileWriter(_path + "/temp.html"));
@@ -314,7 +403,7 @@ public class MainActivity extends AppCompatActivity{
         String ret = "";
 
         try {
-            String file_name=context.getFilesDir() + "/" + date +"/temp.html";
+            String file_name=context.getFilesDir().toString() + "/" + date +"/temp.html";
             File newFile = new File(file_name);
             //path.setText(newFile.getAbsolutePath());
             //InputStream inputStream = context.openFileInput(date + "/temp.html");
@@ -357,8 +446,10 @@ public class MainActivity extends AppCompatActivity{
 
     private class AsyncTaskRunner extends AsyncTask<String, String, String> {
 
-        private String resp;
+        private String resp = "done";
         ProgressDialog progressDialog;
+        String getWebsiteOut = "";
+
 
         @Override
         protected String doInBackground(String... params) {
@@ -367,23 +458,26 @@ public class MainActivity extends AppCompatActivity{
 
             try {
                 //final Document doc = Jsoup.connect(url).userAgent("Mozilla").get();
-                Document doc = Jsoup.connect(params[0]).get();
-                //getWebsiteOut = doc.toString();
+                Connection.Response con = Jsoup.connect(params[0]).timeout(600000).execute();
+                Document doc = con.parse();
+                getWebsiteOut = "";
+                String _path = getBaseContext().getFilesDir().toString() + "/" + params[1];
+                int statusCode = con.statusCode();
 
                 Elements images = doc.select("img[src]");
                 //getImages(images,date,context);
 
-                String _path = getApplication().getFilesDir().toString() + "/" + params[1];
-
                 Elements article = doc.getElementsByTag("article");
+                Elements divs = doc.getElementsByTag("div");
+                getWebsiteOut += "<!DOCTYPE HTML> \n" +
+                        "<html> \n" +
+                        //"<meta name=\"viewport\" content=\"target-densitydpi=high-dpi\" >";
+                        "<meta name=\"viewport\" content=\"width=device-width, height=device-height, initial-scale=0.5 \" > \n";
+                        //"<head> <style> p{ width: device-width; }</style>  </head> \n" ;
 
-                getWebsiteOut = getWebsiteOut + "<!DOCTYPE HTML> " +
-                        "<html>" +
-                        "<meta name=\"viewport\" content='width=device-width, initial-scale=1.0,text/html,charset=utf-8' >";
+                getWebsiteOut += article.html();
 
-                getWebsiteOut = article.html();
-
-                getWebsiteOut = getWebsiteOut + "</html>";
+                getWebsiteOut += "</html>";
 
                 File tempFile = new File(_path);
 
@@ -391,36 +485,29 @@ public class MainActivity extends AppCompatActivity{
                     tempFile.mkdir();
                 }
 
+                if(statusCode == 200){
+                    for(Element link : images){
+                        //get image url and data
+                        String temp = link.attr("src");
+                        Connection.Response resultImageResponse = Jsoup.connect(temp).timeout(60000).ignoreContentType(true).execute();
 
-                for(Element link : images){
-                    //get image url and data
-                    String temp = link.attr("src");
-                    Connection.Response resultImageResponse = Jsoup.connect(temp).timeout(60000).ignoreContentType(true).execute();
+                        //parse for file name and replace in html
+                        Uri uri = Uri.parse(temp);
+                        String imageName = uri.getLastPathSegment();
+                        link.attr("src", imageName);
 
-                    //parse for file name and replace in html
-                    Uri uri = Uri.parse(temp);
-                    String imageName = uri.getLastPathSegment();
-                    link.attr("src", imageName);
 
-                    List<TextNode> tnList = link.textNodes();
+                        File file = new File(_path + "/" + imageName);
 
-                    int w = (int) Math.round(screenWidth * 0.2);
-                    String width = "width=" +  Integer.toString(screenWidth);//Integer.toString(300);
-                    int h = (int) Math.round(screenHeight * 0.2);
-                    String height = "height=" + Integer.toString(200);
-
-                    File file = new File(_path + "/" + imageName);
-
-                    //if(!file.exists()) {
-
+                        //if(!file.exists()) {
                         try {
                             FileOutputStream out = new FileOutputStream(new File(_path + "/" + imageName));
                             out.write(resultImageResponse.bodyAsBytes());
                             out.close();
                             getWebsiteOut = getWebsiteOut.replace(temp, "file:///" + _path + "/" + imageName);
                             //getWebsiteOut = getWebsiteOut.replace(temp, imageName);
-                            //getWebsiteOut = getWebsiteOut.replaceAll("width=\".*?\"", "style=\"display: inline; \"");
-                            //getWebsiteOut = getWebsiteOut.replaceAll("width=\".*?\"", width);
+                            getWebsiteOut = getWebsiteOut.replaceAll("width=\".*?\"", "style=\"display: inline; height: device-height; width: device-width;\"");
+                            //getWebsiteOut = getWebsiteOut.replaceAll("width=\".*?\"", "");
                             //getWebsiteOut = getWebsiteOut.replaceAll("height=\".*?\"", "");
                             //link.attr("src",imageName);
                             //link.attr("style","max-width: 100%; height: auto;");
@@ -428,14 +515,41 @@ public class MainActivity extends AppCompatActivity{
                         } catch (IOException e) {
                             Log.e("Exception", "File write failed: " + e.toString());
                         }
-
-                        writeToFile(getWebsiteOut,getBaseContext(),globaldate);
-                    //}
+                        //}
+                    }
                 }
-
+                writeToFile(getWebsiteOut,getBaseContext(),globalDate);
+                System.out.println("LINK WORKED, WRITING HTML");
             } catch (IOException e) {
+                getWebsiteOut = "<!DOCTYPE HTML> " +
+                        "<html>" +
+                        "<meta name=\"viewport\" content='width=device-width, initial-scale=1.0,text/html,charset=utf-8' >";
+
+                getWebsiteOut += "website is not available. please choose another date";
+
+                getWebsiteOut += "</html>";
+                try
+                {
+                    Thread.sleep(500);
+                }
+                catch(InterruptedException ex)
+                {
+                    Thread.currentThread().interrupt();
+                }
+                System.out.println("LINK DID NOT WORK, WRITING ERROR");
+                writeToFile(getWebsiteOut,getBaseContext(),globalDate);
                 e.printStackTrace();
             }
+
+            /*try
+            {
+                Thread.sleep(5000);
+            }
+            catch(InterruptedException ex)
+            {
+                Thread.currentThread().interrupt();
+            } */
+
             return resp;
         }
 
@@ -444,6 +558,7 @@ public class MainActivity extends AppCompatActivity{
         protected void onPostExecute(String result) {
             // execution of result of Long time consuming operation
             progressDialog.dismiss();
+            showPage();
         }
 
 
@@ -459,6 +574,15 @@ public class MainActivity extends AppCompatActivity{
         protected void onProgressUpdate(String... text) {
 
         }
+
+        void showPage(){
+            setupWebView();
+
+            System.out.println("DO THAT 2:" +globalDate);
+
+            result.loadDataWithBaseURL("file:///" + getBaseContext().getFilesDir().toString() + "/" +globalDate, getWebsiteOut, "text/html", "UTF-8", null);
+        }
+
     }
 }
 

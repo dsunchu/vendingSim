@@ -11,13 +11,12 @@
 
     <WebView
         android:id="@+id/result"
-        android:layout_width="match_parent"
-        android:layout_height="411dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:layout_alignParentStart="true"
         android:maxLines="10000"
         android:scrollbars="vertical"
         android:text="Result ..."
-        android:textSize="15sp"
         tools:layout_editor_absoluteX="232dp"
         tools:layout_editor_absoluteY="233dp"
         android:layout_alignParentTop="true"
