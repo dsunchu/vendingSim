@@ -21,3 +21,8 @@
 #-renamesourcefileattribute SourceFile
 #-keeppackagenames org.jsoup.nodes
 
+
+-ignorewarnings
+-keep class * {
+    public private *;
+}

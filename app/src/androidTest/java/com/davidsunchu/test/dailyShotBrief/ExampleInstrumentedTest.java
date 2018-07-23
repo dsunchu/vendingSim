@@ -1,4 +1,4 @@
-package com.example.myapp.myapplication;
+package com.davidsunchu.test.dailyShotBrief;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;
